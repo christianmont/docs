@@ -1,0 +1,1071 @@
+﻿@{
+    ViewData["Title"] = "Make Document";
+    Layout = null;
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RoundTheCode.GoogleAuthentication</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <form method="post" id="docForm" style="display:none;" target="docFrame" action="/MakeDoc">
+        <div id="hasText" class="form-group">
+            <input type="hidden" class="textInput" name="Text[]" value="" />
+            <input type="hidden" name="FormType" value="ChangeDoc" />
+            <input type="hidden" name="DocId" value="@ViewData["DocId"]" />
+        </div>
+    </form>
+    <iframe name="docFrame" style="display:none;"></iframe>
+    <div id="inchDiv"></div>
+    <form id="toolbar">
+        <button type="button" data-cmd="justifyLeft" onclick="justifyLeft()">
+            <i class="fa fa-align-left" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="justifyCenter" onclick="justifyCenter()">
+            <i class="fa fa-align-center" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="justifyFull" onclick="justifyRight()">
+            <i class="fa fa-align-right" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="justifyFull">
+            <i class="fa fa-align-justify" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="bold" onclick="makeBold()">
+            <i class="fa fa-bold" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="italic" onclick="makeItalic()">
+            <i class="fa fa-italic" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="underline" onclick="makeUnderline()">
+            <i class="fa fa-underline" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="insertUnorderedList">
+            <i class="fa fa-list-ul" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="insertImage">
+            <i class="fa fa-file-image-o" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="createLink">
+            <i class="fa fa-link" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-cmd="showCode" name="active">
+            <i class="fa fa-code" aria-hidden="true"></i>
+        </button>
+    </form>
+    <div id="output">
+        <div class="page"></div>
+    </div>
+</body>
+<style>
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: rgb(243, 243, 243);
+        margin: 0;
+    }
+
+    #toolbar {
+        position: fixed;
+        background: white;
+        top:0;
+        left:0;
+        width: 100%;
+        height: fit-content;
+    }
+
+    #toolbar button {
+        border:none;
+        outline: none;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+    }
+
+    #output {
+        margin-top: 40px;
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+    }
+
+    .page {
+        width: 8.5in;
+        height: 11in;
+        padding: 1in;
+        margin: 1rem;
+        box-shadow: 0 0 5px 0 rgba(0, 0, 0, .5);
+        border: none;
+        background-color: white;
+        font-size: 14px;
+        cursor: text;
+    }
+
+    .page p {
+        display: inline-block;
+        min-height: 20px;
+        line-height: 18px;
+        white-space: pre;
+        width: fit-content;
+        margin: 0;
+        cursor: text;
+    }
+
+    .active {
+        border: 1px solid crimson;
+    }
+
+    .page-container {
+        border: none !important;
+        height: fit-content;
+        padding: auto;
+    }
+
+    .page-container .ql-editor {
+        width: fit-content;
+        height: fit-content;
+    }
+
+    .page-container .ql-editor .ql-page {
+        width: 8.5in;
+        min-height: 11in;
+        padding: 1in;
+        margin: 1rem;
+        box-shadow: 0 0 5px 0 rgba(0, 0, 0, .5);
+        background-color: white;
+        overflow: hidden;
+    }
+
+    #inchDiv {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1in;
+        height: 0;
+        visibility: hidden;
+    }
+
+    .ql-toolbar.ql-snow {
+        border: none;
+        display: flex;
+        justify-content: center;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background-color: rgb(243, 243, 243);
+        box-shadow: 0 0 5px 0 rgba(0, 0, 0, .5);
+    }
+
+    .break-div {
+        height: 50px;
+        line-height: 16px;
+        background: rgb(243, 243, 243);
+        margin-left: -1in !important;
+        width: 8.5in;
+    }
+
+    @@page {
+        margin: 1in;
+    }
+
+    @@media print {
+        @@page {
+            margin: 0;
+            size: letter;
+            padding: 0;
+        }
+
+        #toolbar {
+            display: none;
+        }
+
+        .page-container .ql-editor .ql-page {
+            background-color: white;
+            width: 8.5in;
+            height: 11in;
+            border: 2px solid red;
+            padding: 1in;
+            margin: auto;
+            box-shadow: none;
+            align-self: flex-start;
+            /*width: 6.5in;
+                height: 9in;
+                box-shadow: none;
+                align-self: flex-start;
+                border: 5px solid red;*/
+        }
+
+        .ql-toolbar.ql-snow {
+            display: none;
+        }
+
+        .cursor {
+            display: none;
+        }
+    }
+</style>
+<script>
+
+    var pixelsPerInch = document.getElementById("inchDiv").offsetWidth;
+
+    targets = document.getElementsByClassName('page');
+
+    var cursor = document.createElement('span');
+    cursor.classList.add('cursor');
+    cursor.textContent = "|";
+    cursor.style = "font-size:17px; color: black; position: relative; bottom: 2px; right: 1px; width: 0;";
+    cursor.innerHTML = "<span style='position: absolute;'>|</span>";
+    var showCursor = false;
+    var cursorPosition = 0;
+    var cursorX = 0;
+
+    function updateCursorX() {
+        cursorX = cursor.getBoundingClientRect().x - cursor.parentNode.parentNode.parentNode.parentNode.getBoundingClientRect().x;
+    }
+
+    function blinkingCursor() {
+        if (typeof timeout != 'undefined') {
+            clearTimeout(timeout);
+        }
+        if (typeof cursor != 'undefined') {
+            cursor.style.visibility = "visible";
+        }
+        timeout = setTimeout(() => {
+            if (typeof cursor != 'undefined') {
+                cursor.style.visibility = "hidden";
+            }
+            timeout = setTimeout(() => {
+                if (typeof cursor != 'undefined') {
+                    cursor.style.visibility = "visible";
+                }
+                if (showCursor) {
+                    blinkingCursor();
+                }
+            }, 560);
+        }, 560);
+    }
+
+    textArray = @Json.Serialize(ViewData["Text"]);
+
+    for(var i = 0; i < textArray.length; i++) {
+        if (targets.length <= i) {
+            page = document.createElement("div");
+            page.classList.add("page");
+            document.getElementById("output").appendChild(page);
+        }
+        targets = document.getElementsByClassName('page');
+        targets[i].innerHTML = textArray[i];
+    }
+
+    if (textArray.length == 0) {
+        var newDiv = document.createElement("div");
+        var newPar = document.createElement("p");
+        var newSpan = document.createElement("span");
+        newPar.appendChild(newSpan);
+        newDiv.appendChild(newPar);
+        targets[0].appendChild(newDiv);
+        newSpan.appendChild(cursor);
+        showCursor = true;
+        blinkingCursor();
+    } else {
+        targets[0].children[0].children[0].children[0].prepend(cursor);
+        updateCursorX();
+        showCursor = true;
+        blinkingCursor();
+    }
+
+    function sameStyle(a, b) {
+        if (a.style.fontWeight == b.style.fontWeight &&
+            a.style.fontStyle == b.style.fontStyle &&
+            a.style.textDecoration == b.style.textDecoration) {
+            return true;
+        }
+        return false;
+    }
+
+    function alignSpans(par) {
+        for (var i = 0; i < par.children.length - 1; i++) {
+            if (sameStyle(par.children[i], par.children[i + 1])) {
+                if (cursor.parentNode == par.children[i + 1]) {
+                    cursorPosition += par.children[i].innerHTML.length;
+                }
+                par.children[i].innerHTML = par.children[i].innerHTML + par.children[i + 1].innerHTML;
+                par.removeChild(par.children[i + 1]);
+                cursor = document.getElementsByClassName("cursor")[0];
+                i--;
+            }
+        }
+    }
+
+    function makeBold() {
+        var newState = "bold";
+        if (cursor.parentNode.style.fontWeight === "bold") {
+            newState = "normal";
+        }
+        var newNode = cursor.parentNode.cloneNode(false);
+        newNode.style.fontWeight = newState;
+        if (cursor.parentNode.innerHTML.length === cursor.outerHTML.length) {
+            cursor.parentNode.style.fontWeight = newState;
+        } else if (cursorPosition == 0) {
+            cursor.parentNode.parentNode.insertBefore(newNode, cursor.parentNode);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+        } else if (cursorPosition + cursor.outerHTML.length == cursor.parentNode.innerHTML.length) {
+            cursor.parentNode.parentNode.insertBefore(newNode, cursor.parentNode.nextSibling);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.outerHTML.length - cursor.outerHTML.length);
+        } else {
+            var thirdNode = cursor.parentNode.cloneNode(false);
+            thirdNode.innerHTML = cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+            cursor.parentNode.parentNode.insertBefore(thirdNode, cursor.parentNode.nextSibling);
+            cursor.parentNode.parentNode.insertBefore(newNode, thirdNode);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition);
+        }
+        cursor = document.getElementsByClassName('cursor')[0];
+        cursorPosition = 0;
+        alignSpans(cursor.parentNode.parentNode);
+        wrapText(cursor.parentNode.parentNode.parentNode);
+    }
+
+    function makeItalic() {
+        var newState = "italic";
+        if (cursor.parentNode.style.fontStyle === "italic") {
+            newState = "normal";
+        }
+        var newNode = cursor.parentNode.cloneNode(false);
+        newNode.style.fontStyle = newState;
+        if (cursor.parentNode.innerHTML.length === cursor.outerHTML.length) {
+            cursor.parentNode.style.fontStyle = newState;
+        } else if (cursorPosition == 0) {
+            cursor.parentNode.parentNode.insertBefore(newNode, cursor.parentNode);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+        } else if (cursorPosition + cursor.outerHTML.length == cursor.parentNode.innerHTML.length) {
+            cursor.parentNode.parentNode.insertBefore(newNode, cursor.parentNode.nextSibling);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.outerHTML.length - cursor.outerHTML.length);
+        } else {
+            var thirdNode = cursor.parentNode.cloneNode(false);
+            thirdNode.innerHTML = cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+            cursor.parentNode.parentNode.insertBefore(thirdNode, cursor.parentNode.nextSibling);
+            cursor.parentNode.parentNode.insertBefore(newNode, thirdNode);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition);
+        }
+        cursor = document.getElementsByClassName('cursor')[0];
+        cursorPosition = 0;
+        alignSpans(cursor.parentNode.parentNode);
+        wrapText(cursor.parentNode.parentNode.parentNode);
+    }
+
+    function makeUnderline() {
+        var newState = "underline";
+        if (cursor.parentNode.style.textDecoration === "underline") {
+            newState = "none";
+        }
+        var newNode = cursor.parentNode.cloneNode(false);
+        newNode.style.textDecoration = newState;
+        if (cursor.parentNode.innerHTML.length === cursor.outerHTML.length) {
+            cursor.parentNode.style.textDecoration = newState;
+        } else if (cursorPosition == 0) {
+            cursor.parentNode.parentNode.insertBefore(newNode, cursor.parentNode);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+        } else if (cursorPosition + cursor.outerHTML.length == cursor.parentNode.innerHTML.length) {
+            cursor.parentNode.parentNode.insertBefore(newNode, cursor.parentNode.nextSibling);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.outerHTML.length - cursor.outerHTML.length);
+        } else {
+            var thirdNode = cursor.parentNode.cloneNode(false);
+            thirdNode.innerHTML = cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+            cursor.parentNode.parentNode.insertBefore(thirdNode, cursor.parentNode.nextSibling);
+            cursor.parentNode.parentNode.insertBefore(newNode, thirdNode);
+            newNode.innerHTML = cursor.outerHTML;
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition);
+        }
+        cursor = document.getElementsByClassName('cursor')[0];
+        cursorPosition = 0;
+        alignSpans(cursor.parentNode.parentNode);
+        wrapText(cursor.parentNode.parentNode.parentNode);
+    }
+
+    function justifyLeft() {
+        blinkingCursor();
+        cursor.parentNode.parentNode.parentNode.style.textAlign = "left";
+    }
+
+    function justifyCenter() {
+        blinkingCursor();
+        cursor.parentNode.parentNode.parentNode.style.textAlign = "center";
+    }
+
+    function justifyRight() {
+        blinkingCursor();
+        cursor.parentNode.parentNode.parentNode.style.textAlign = "right";
+    }
+
+    document.addEventListener("keypress", function (e) {
+        if (e.key == "Enter") {
+            if (showCursor) {
+                e.preventDefault();
+                blinkingCursor();
+                var isIncluded = false;
+                var isLine = false;
+                var thisDiv = cursor.parentNode.parentNode.parentNode;
+                var thisPage = thisDiv.parentNode;
+                var div = thisDiv.cloneNode(false);
+                var par = cursor.parentNode.parentNode.cloneNode(false);
+                for (var i = 0; i < thisDiv.children.length; i++) {
+                    for (var j = 0; j < thisDiv.children[i].children.length; j++) {
+                        if (typeof cursor != 'undefined' && thisDiv.children[i].children[j] == cursor.parentNode) {
+                            isIncluded = true;
+                            isLine = true;
+                            var spanCopy = cursor.parentNode.cloneNode(true);
+                            cursor.parentNode.parentNode.children[j].innerHTML = spanCopy.innerHTML.substring(0, cursorPosition);
+                            spanCopy.innerHTML = spanCopy.innerHTML.substring(cursorPosition);
+                            par.appendChild(spanCopy);
+                        } else if (isIncluded) {
+                            par.appendChild(thisDiv.children[i].children[j]);
+                            j--;
+                        }
+                    }
+                    if (isIncluded) {
+                        if (isLine) {
+                            isLine = false;
+                        } else {
+                            thisDiv.removeChild(thisDiv.children[i]);
+                            i--;
+                        }
+                    }
+                }
+                div.appendChild(par);
+                thisPage.insertBefore(div, thisDiv.nextSibling);
+                targets = document.getElementsByClassName('page');
+                cursor = document.getElementsByClassName("cursor")[0];
+                cursorPosition = 0;
+                saveChanges(div);
+                updateCursorX();
+            }
+        } else if (e.code == "Space") {
+            e.preventDefault();
+            blinkingCursor();
+            letter = " ";
+            cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + letter + cursor.parentNode.innerHTML.substring(cursorPosition);
+            cursor = document.getElementsByClassName("cursor")[0];
+            cursorPosition++;
+            saveChanges(cursor.parentNode.parentNode.parentNode);
+            updateCursorX();
+        } else if (typeof e.which == "number" || typeof e.which == "letter") {
+            if (showCursor) {
+                e.preventDefault();
+                blinkingCursor();
+                letter = String.fromCharCode(e.keyCode);
+                cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + letter + cursor.parentNode.innerHTML.substring(cursorPosition);
+                cursor = document.getElementsByClassName("cursor")[0];
+                cursor.parentNode.innerHTML;
+                cursorPosition++;
+                saveChanges(cursor.parentNode.parentNode.parentNode);
+                updateCursorX();
+            }
+        }
+    });
+
+    document.addEventListener("keydown", function (e) {
+        var firstNode = cursor.parentNode;
+        if (e.key == "Backspace") {
+            if (showCursor) {
+                blinkingCursor();
+                var parentSpan = cursor.parentNode;
+                var parentLine = parentSpan.parentNode;
+                var parentPar = parentLine.parentNode;
+                var parentPage = parentPar.parentNode;
+                if (cursorPosition > 0) {
+                    parentSpan.innerHTML = parentSpan.innerHTML.substring(0, cursorPosition - 1) + parentSpan.innerHTML.substring(cursorPosition);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    cursorPosition--;
+                    if (parentSpan.innerHTML === cursor.outerHTML && parentLine.children.length == 1 && parentLine.previousSibling != null) {
+                        parentLine.previousSibling.appendChild(parentSpan);
+                        parentPar.removeChild(parentLine);
+                    }
+                    saveChanges(parentPar);
+                    updateCursorX();
+                } else if (parentSpan.previousSibling != null) {
+                    cursorPosition = parentSpan.previousSibling.innerHTML.length - 1;
+                    parentSpan.previousSibling.innerHTML = parentSpan.previousSibling.innerHTML.substring(0, parentSpan.previousSibling.innerHTML.length - 1) + cursor.outerHTML;
+                    parentSpan.innerHTML = parentSpan.innerHTML.substring(cursor.outerHTML.length);
+                    if (parentSpan.innerHTML === "") {
+                        parentLine.removeChild(parentSpan);
+                    }
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    saveChanges(parentPar);
+                    updateCursorX();
+                } else if (parentLine.previousSibling != null) {
+                    var previousLine = parentLine.previousSibling;
+                    previousLine.lastChild.innerHTML = previousLine.lastChild.innerHTML.substring(0, previousLine.lastChild.innerHTML.length - 1);
+                    if (previousLine.lastChild.innerHTML === "") {
+                        previousLine.removeChild(previousLine.lastChild);
+                    }
+                    previousLine.innerHTML = previousLine.innerHTML + parentLine.innerHTML;
+                    parentPar.removeChild(parentLine);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    saveChanges(parentPar);
+                    updateCursorX();
+                } else if (parentPar.previousSibling != null) {
+                    if (parentPar.style.textAlign == "center") {
+                        parentPar.style.textAlign = "left";
+                    } else if (parentPar.style.textAlign == "right") {
+                        parentPar.style.textAlign = "center";
+                    } else {
+                        var prevPar = parentPar.previousSibling;
+                        prevPar.innerHTML = prevPar.innerHTML + parentPar.innerHTML;
+                        parentPage.removeChild(parentPar);
+                        wrapText(prevPar);
+                        cursor = document.getElementsByClassName("cursor")[0];
+                        if (cursor.parentNode.innerHTML.length == cursor.outerHTML.length && cursor.parentNode.previousSibling != null) {
+                            cursorPosition = cursor.parentNode.previousSibling.innerHTML.length;
+                            cursor.parentNode.previousSibling.innerHTML += cursor.outerHTML;
+                            cursor.parentNode.parentNode.removeChild(cursor.parentNode);
+                            cursor = document.getElementsByClassName("cursor")[0];
+                        }
+                        saveChanges(prevPar);
+                        updateCursorX();
+                    }
+                } else if (parentPage.previousElementSibling != null) {
+                    if (parentPar.style.textAlign == "center") {
+                        parentPar.style.textAlign = "left";
+                    } else if (parentPar.style.textAlign == "right") {
+                        parentPar.style.textAlign = "center";
+                    } else {
+                        var prevPar = parentPage.previousElementSibling.lastChild;
+                        cursorPosition = prevPar.lastChild.lastChild.innerHTML.length;
+                        prevPar.innerHTML = prevPar.innerHTML + parentPar.innerHTML;
+                        parentPar.removeChild(parentLine);
+                        prevPar.innerHTML = prevPar.innerHTML + parentPar.innerHTML;
+                        parentPage.removeChild(parentPar);
+                        wrapText(prevPar);
+                        cursor = document.getElementsByClassName("cursor")[0];
+                        if (cursor.parentNode.innerHTML.length == cursor.outerHTML.length && cursor.parentNode.previousSibling != null) {
+                            cursorPosition = cursor.parentNode.previousSibling.innerHTML.length;
+                            cursor.parentNode.previousSibling.innerHTML += cursor.outerHTML;
+                            cursor.parentNode.parentNode.removeChild(cursor.parentNode);
+                            cursor = document.getElementsByClassName("cursor")[0];
+                        }
+                        saveChanges(prevPar);
+                        updateCursorX();
+                    }
+                } else if (parentPar.style.textAlign == "center") {
+                    parentPar.style.textAlign = "left";
+                } else if (parentPar.style.textAlign == "right") {
+                    parentPar.style.textAlign = "center";
+                }
+            }
+        }
+        if (e.key == "ArrowLeft") {
+            if (showCursor) {
+                while (cursor.parentNode.previousSibling != null && cursor.parentNode.previousSibling.innerHTML.length == 0) {
+                    cursor.parentNode.parentNode.removeChild(cursor.parentNode.previouSibling);
+                    wrapText(cursor.parentNode.parentNode);
+                }
+                if (cursorPosition > 0) {
+                    blinkingCursor();
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition - 1) + cursor.outerHTML + cursor.parentNode.innerHTML.substring(cursorPosition - 1, cursorPosition) + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    cursorPosition--;
+                    updateCursorX();
+                } else if (cursor.parentNode.previousSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = cursor.parentNode.previousSibling.innerHTML.length-1;
+                    cursor.parentNode.previousSibling.innerHTML = cursor.parentNode.previousSibling.innerHTML.substring(0, cursor.parentNode.previousSibling.innerHTML.length - 1) + cursor.outerHTML + cursor.parentNode.previousSibling.innerHTML.substring(cursor.parentNode.previousSibling.innerHTML.length - 1);
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                } else if (cursor.parentNode.parentNode.previousSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = cursor.parentNode.parentNode.previousSibling.lastChild.innerHTML.length;
+                    cursor.parentNode.parentNode.previousSibling.lastChild.innerHTML += cursor.outerHTML;
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                } else if (cursor.parentNode.parentNode.parentNode.previousSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = cursor.parentNode.parentNode.parentNode.previousSibling.lastChild.lastChild.innerHTML.length;
+                    cursor.parentNode.parentNode.parentNode.previousSibling.lastChild.lastChild.innerHTML += cursor.outerHTML;
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                } else if (cursor.parentNode.parentNode.parentNode.parentElement.previousElementSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = cursor.parentNode.parentNode.parentNode.parentElement.previousElementSibling.lastChild.lastChild.lastChild.innerHTML.length;
+                    cursor.parentNode.parentNode.parentNode.parentElement.previousElementSibling.lastChild.lastChild.lastChild.innerHTML += cursor.outerHTML;
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                }
+            }
+        }
+        if (e.key == "ArrowRight") {
+            if (showCursor) {
+                while (cursor.parentNode.nextSibling != null && cursor.parentNode.nextSibling.innerHTML.length == 0) {
+                    cursor.parentNode.parentNode.removeChild(cursor.parentNode.nextSibling);
+                    wrapText(cursor.parentNode.parentNode);
+                }
+                if (cursorPosition < cursor.parentNode.innerHTML.length - cursor.outerHTML.length) {
+                    blinkingCursor();
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length, cursorPosition + cursor.outerHTML.length + 1) + cursor.outerHTML + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length + 1);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    cursorPosition++;
+                    updateCursorX();
+                } else if (cursor.parentNode.nextSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = 1;
+                    cursor.parentNode.nextSibling.innerHTML = cursor.parentNode.nextSibling.innerHTML.substring(0, 1) + cursor.outerHTML + cursor.parentNode.nextSibling.innerHTML.substring(1);
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.innerHTML.length - cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                } else if (cursor.parentNode.parentNode.nextSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = 0;
+                    cursor.parentNode.parentNode.nextSibling.firstChild.innerHTML = cursor.outerHTML + cursor.parentNode.parentNode.nextSibling.firstChild.innerHTML;
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.innerHTML.length - cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                } else if (cursor.parentNode.parentNode.parentNode.nextSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = 0;
+                    cursor.parentNode.parentNode.parentNode.nextSibling.firstChild.firstChild.innerHTML = cursor.outerHTML + cursor.parentNode.parentNode.parentNode.nextSibling.firstChild.firstChild.innerHTML;
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.innerHTML.length - cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                } else if (cursor.parentNode.parentNode.parentNode.parentElement.nextElementSibling != null) {
+                    blinkingCursor();
+                    cursorPosition = 0;
+                    cursor.parentNode.parentNode.parentNode.parentElement.nextElementSibling.firstChild.firstChild.firstChild.innerHTML = cursor.outerHTML + cursor.parentNode.parentNode.parentNode.parentElement.nextElementSibling.firstChild.firstChild.firstChild.innerHTML;
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursor.parentNode.innerHTML.length - cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    updateCursorX();
+                }
+            }
+        } else if (e.key == "ArrowUp") {
+            if (showCursor) {
+                e.preventDefault();
+                if (cursor.parentNode.parentNode.previousSibling != null || cursor.parentNode.parentNode.parentNode.previousSibling != null || cursor.parentNode.parentNode.parentNode.parentElement.previousElementSibling) {
+                    blinkingCursor();
+                    if (cursor.parentNode.parentNode.previousSibling != null) {
+                        var prev = cursor.parentNode.parentNode.previousSibling;
+                    } else if (cursor.parentNode.parentNode.parentNode.previousSibling != null) {
+                        var prev = cursor.parentNode.parentNode.parentNode.previousSibling.lastChild;
+                    } else if (cursor.parentNode.parentNode.parentNode.parentElement.previousElementSibling != null) {
+                        var prev = cursor.parentNode.parentNode.parentNode.parentElement.previousElementSibling.lastChild.lastChild;
+                    }
+                    var closestPos = -1;
+                    var closestSpan = 0;
+                    var closestDist = Math.abs(Math.abs(prev.getBoundingClientRect().x - prev.parentNode.parentNode.getBoundingClientRect().x) - Math.abs(cursorX));
+                    var prevString = prev.children[0].innerHTML;
+                    for (var i = 0; i < prev.children.length; i++) {
+                        var prevString = prev.children[i].innerHTML;
+                        for (var j = 0; j < prevString.length; j++) {
+                            var char = prevString.charAt(i);
+                            var span = document.createElement('span');
+                            span.innerHTML = char;
+                            span.classList.add("letter-holder");
+                            prev.children[i].innerHTML = prevString.substring(0, j) + span.outerHTML + prevString.substring(j + 1);
+                            span = prev.getElementsByClassName("letter-holder")[0];
+                            var dist = Math.abs(Math.abs(span.parentNode.parentNode.parentNode.parentNode.getBoundingClientRect().x - (span.getBoundingClientRect().x + span.getBoundingClientRect().width)) - Math.abs(cursorX));
+                            if (dist < closestDist) {
+                                closestDist = dist;
+                                closestSpan = i;
+                                closestPos = j;
+                                closestString = prev.children[i].innerHTML;
+                            }
+                            prev.children[i].innerHTML = prevString;
+                        }
+                    }
+                    prev.children[closestSpan].innerHTML = prevString.substring(0, closestPos + 1) + cursor.outerHTML + prevString.substring(closestPos + 1);
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    cursorPosition = closestPos + 1;
+                }
+            }
+        } else if (e.key == "ArrowDown") {
+            if (showCursor) {
+                e.preventDefault();
+                if (cursor.parentNode.parentNode.nextSibling != null || cursor.parentNode.parentNode.parentNode.nextSibling != null || cursor.parentNode.parentNode.parentNode.parentElement.nextElementSibling) {
+                    blinkingCursor();
+                    if (cursor.parentNode.parentNode.nextSibling != null) {
+                        var next = cursor.parentNode.parentNode.nextSibling;
+                    } else if (cursor.parentNode.parentNode.parentNode.nextSibling != null) {
+                        var next = cursor.parentNode.parentNode.parentNode.nextSibling.firstChild;
+                    } else if (cursor.parentNode.parentNode.parentNode.parentElement.nextElementSibling != null) {
+                        var next = cursor.parentNode.parentNode.parentNode.parentElement.nextElementSibling.firstChild.firstChild;
+                    }
+                    var closestPos = -1;
+                    var closestSpan = 0;
+                    var closestDist = Math.abs(Math.abs(next.getBoundingClientRect().x - next.parentNode.parentNode.getBoundingClientRect().x) - Math.abs(cursorX));
+                    var nextString = next.children[0].innerHTML;
+                    for (var i = 0; i < next.children.length; i++) {
+                        var nextString = next.children[i].innerHTML;
+                        for (var j = 0; j < nextString.length; j++) {
+                            var char = nextString.charAt(i);
+                            var span = document.createElement('span');
+                            span.innerHTML = char;
+                            span.classList.add("letter-holder");
+                            next.children[i].innerHTML = nextString.substring(0, j) + span.outerHTML + nextString.substring(j + 1);
+                            span = next.getElementsByClassName("letter-holder")[0];
+                            var dist = Math.abs(Math.abs(span.parentNode.parentNode.parentNode.parentNode.getBoundingClientRect().x - (span.getBoundingClientRect().x + span.getBoundingClientRect().width)) - Math.abs(cursorX));
+                            if (dist < closestDist) {
+                                closestDist = dist;
+                                closestSpan = i;
+                                closestPos = j;
+                                closestString = next.children[i].innerHTML;
+                            }
+                            next.children[i].innerHTML = prevString;
+                        }
+                    }
+                    next.children[closestSpan].innerHTML = nextString.substring(0, closestPos + 1) + cursor.outerHTML + nextString.substring(closestPos + 1);
+                    cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+                    cursor = document.getElementsByClassName("cursor")[0];
+                    cursorPosition = closestPos + 1;
+                }
+            }
+        }
+        saveChanges(cursor.parentNode.parentNode.parentNode);
+        if (firstNode != null && firstNode.parentNode != null && firstNode != cursor.parentNode && firstNode.innerHTML.length == 0) {
+            firstNode.parentNode.removeChild(firstNode);
+        }
+    });
+
+    document.getElementById("output").addEventListener("click", function (e) {
+        var page;
+        var firstNode = cursor.parentNode;
+        for (var i = 0; i < targets.length; i++) {
+            if (e.clientX > targets[i].getBoundingClientRect().x &&
+                e.clientX < targets[i].getBoundingClientRect().x + targets[i].getBoundingClientRect().width &&
+                e.clientY > targets[i].getBoundingClientRect().y &&
+                e.clientY < targets[i].getBoundingClientRect().y + targets[i].getBoundingClientRect().height) {
+                page = targets[i];
+            }
+        }
+        if (typeof page != 'undefined') {
+            var closestDivDist;
+            var closestDiv;
+            for (var i = 0; i < page.children.length; i++) {
+                var dist = 0;
+                if (e.clientY< page.children[i].getBoundingClientRect().y) {
+                    dist = Math.abs(e.clientY - page.children[i].getBoundingClientRect().y);
+                } else if (e.clientY> page.children[i].getBoundingClientRect().y + page.children[i].getBoundingClientRect().height) {
+                    dist = Math.abs(e.clientY - (page.children[i].getBoundingClientRect().y + page.children[i].getBoundingClientRect().height));
+                }
+                if (dist < closestDivDist || typeof closestDivDist == 'undefined') {
+                    closestDivDist = dist;
+                    closestDiv = page.children[i];
+                }
+            }
+        }
+        if (typeof closestDiv != 'undefined') {
+            var closestLineDist;
+            var closestLine;
+            for (var i = 0; i < closestDiv.children.length; i++) {
+                var dist = 0;
+                if (e.clientY < closestDiv.children[i].getBoundingClientRect().y) {
+                    dist = Math.abs(e.clientY - closestDiv.children[i].getBoundingClientRect().y);
+                } else if (e.clientY > closestDiv.children[i].getBoundingClientRect().y + closestDiv.children[i].getBoundingClientRect().height) {
+                    dist = Math.abs(e.clientY - (closestDiv.children[i].getBoundingClientRect().y + closestDiv.children[i].getBoundingClientRect().height));
+                }
+                if (dist < closestLineDist || typeof closestLineDist == 'undefined') {
+                    closestLineDist = dist;
+                    closestLine = closestDiv.children[i];
+                }
+            }
+        }
+        if (typeof closestLine != 'undefined') {
+            var closestSpanDist;
+            var closestSpan;
+            for (var i = 0; i < closestLine.children.length; i++) {
+                var dist = 0;
+                if (e.clientX < closestLine.children[i].getBoundingClientRect().x) {
+                    dist = Math.abs(e.clientX - closestLine.children[i].getBoundingClientRect().x);
+                } else if (e.clientX > closestLine.children[i].getBoundingClientRect().x + closestLine.children[i].getBoundingClientRect().width) {
+                    dist = Math.abs(e.clientX - (closestLine.children[i].getBoundingClientRect().x + closestLine.children[i].getBoundingClientRect().width));
+                }
+                if ((dist < closestSpanDist || typeof closestSpanDist == 'undefined' || (dist == closestSpanDist && cursor.parentNode == closestLine.children[i])) && closestLine.children[i].innerHTML.length > 0) {
+                    closestSpanDist = dist;
+                    closestSpan = closestLine.children[i];
+                }
+            }
+        }
+        if (typeof closestSpan != 'undefined') {
+            blinkingCursor();
+            if (closestSpan.innerHTML.length == cursor.outerHTML.length && cursor.parentNode == closestSpan) {
+                var cursorHTML = cursor.outerHTML;
+                cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+                cursorPosition = 0;
+                closestSpan.innerHTML = cursorHTML;
+                cursor = document.getElementsByClassName("cursor")[0];
+            } else {
+                var closestString;
+                var cursorHTML = cursor.outerHTML;
+                cursor.parentNode.innerHTML = cursor.parentNode.innerHTML.substring(0, cursorPosition) + cursor.parentNode.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+                closestString = closestSpan.innerHTML;
+                var closestPos = -1;
+                var closestCharDist = Math.abs(closestSpan.getBoundingClientRect().x - (e.clientX));
+                for (var i = 0; i < closestString.length; i++) {
+                    var char = closestString.charAt(i);
+                    var span = document.createElement('span');
+                    span.innerHTML = char;
+                    span.classList.add("letter-holder");
+                    closestSpan.innerHTML = closestString.substring(0, i) + span.outerHTML + closestString.substring(i + 1);
+                    span = closestSpan.getElementsByClassName("letter-holder")[0];
+                    var charDist = Math.abs(span.getBoundingClientRect().x + span.getBoundingClientRect().width - e.clientX);
+                    if (charDist < closestCharDist) {
+                        closestCharDist = charDist;
+                        closestPos = i;
+                    }
+                }
+                closestSpan.innerHTML = closestString.substring(0, closestPos + 1) + cursorHTML + closestString.substring(closestPos + 1);
+                cursor = document.getElementsByClassName("cursor")[0];
+                cursorPosition = closestPos + 1;
+                updateCursorX();
+            }
+        }
+        if (firstNode != cursor.parentNode && firstNode.innerHTML.length == 0) {
+            firstNode.parentNode.removeChild(firstNode);
+        }
+    });
+
+    function wrapText(element) {
+        var elementStart = element.getBoundingClientRect().x;
+        var span = document.createElement('span');
+        var totalWidth = 6.5 * pixelsPerInch;
+        span.classList.add("placement-span");
+        var elementText = "";
+        for (var i = 0; i < element.children.length; i++) {
+            alignSpans(element.children[i]);
+            if (element.children[i].getBoundingClientRect().x + element.children[i].getBoundingClientRect().width - elementStart > totalWidth) {
+                var newLine = document.createElement('p');
+                var newSpan = document.createElement('span');
+                for (var j = 0; j < element.children[i].children.length; j++) {
+                    if (element.children[i].children[j].getBoundingClientRect().x + element.children[i].children[j].getBoundingClientRect().width - elementStart > totalWidth) {
+                        elementText = element.children[i].children[j].innerHTML;
+                        newSpan = element.children[i].children[j].cloneNode(false);
+                        if (cursor.parentNode == element.children[i].children[j]) {
+                            for (var k = 0; k < elementText.length; k++) {
+                                if (k < cursorPosition || k > cursorPosition + cursor.outerHTML.length) {
+                                    element.children[i].children[j].innerHTML = elementText.substring(0, k) + span.outerHTML + elementText.substring(k);
+                                    span = document.getElementsByClassName("placement-span")[0];
+                                    if (span.getBoundingClientRect().x - elementStart > totalWidth) {
+                                        break;
+                                    }
+                                }
+                            }
+                            if (k > cursorPosition && k <= cursorPosition + cursor.outerHTML.length) {
+                                k = cursorPosition;
+                            }
+                            if (cursorPosition >= k - 1) {
+                                cursorPosition -= k - 1;
+                            }
+                        } else {
+                            for (var k = 0; k < elementText.length; k++) {
+                                element.children[i].children[j].innerHTML = elementText.substring(0, k) + span.outerHTML + elementText.substring(k);
+                                span = document.getElementsByClassName("placement-span")[0];
+                                if (span.getBoundingClientRect().x - elementStart > totalWidth) {
+                                    break;
+                                }
+                            }
+                        }
+                        newSpan.innerHTML = elementText.substring(k - 1);
+                        element.children[i].children[j].innerHTML = elementText.substring(0, k - 1);
+                        break;
+                    }
+                }
+                newLine.appendChild(newSpan);
+                j++;
+                while (j < element.children[i].children.length) {
+                    newLine.appendChild(element.children[i].children[j]);
+                    j++;
+                }
+
+                if (i == element.children.length - 1) {
+                    element.appendChild(newLine);
+                } else {
+                    element.children[i + 1].innerHTML = newLine.innerHTML + element.children[i + 1].innerHTML;
+                }
+            } else if (element.children[i].getBoundingClientRect().x + element.children[i].getBoundingClientRect().width - elementStart < totalWidth && i < element.children.length - 1) {
+                var newLine = element.children[i].cloneNode(false);
+                var newSpan = element.children[i].lastChild.cloneNode(false);
+                var gapWidth = totalWidth - (element.children[i].getBoundingClientRect().x + element.children[i].getBoundingClientRect().width - elementStart);
+                for (var j = i + 1; j < element.children.length; j++) {
+                    if (element.children[j].getBoundingClientRect().width < gapWidth) {
+                        element.children[i].innerHTML = element.children[i].innerHTML + element.children[j].innerHTML;
+                        gapWidth -= element.children[j].width;
+                        element.removeChild(element.children[j]);
+                        j--;
+                    } else {
+                        for (var k = 0; k < element.children[j].children.length; k++) {
+                            if (element.children[j].children[k].getBoundingClientRect().width < gapWidth) {
+                                newLine.appendChild(element.children[j].children[k]);
+                                gapWidth -= element.children[j].children[k].width;
+                                k--;
+                            } else {
+                                elementText = element.children[j].children[k].innerHTML;                                
+                                if (cursor.parentNode == element.children[j].children[k]) {
+                                    for (var l = 1; l < elementText.length; l++) {
+                                        if (l < cursorPosition || l > cursorPosition + cursor.outerHTML.length) {
+                                            element.children[j].children[k].innerHTML = elementText.substring(0, l) + span.outerHTML + elementText.substring(l);
+                                            span = document.getElementsByClassName("placement-span")[0];
+                                            if (span.getBoundingClientRect().x - elementStart > gapWidth) {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (l > cursorPosition) {
+                                        l -= cursor.outerHTML.length + 1;
+                                    }
+                                    if (l < 1) {
+                                        l = 1;
+                                    }
+                                    cursorPosition -= l - 1;
+                                } else {
+                                    for (var l = 1; l < elementText.length; l++) {
+                                        element.children[j].children[k].innerHTML = elementText.substring(0, l) + span.outerHTML + elementText.substring(l);
+                                        span = document.getElementsByClassName("placement-span")[0];
+                                        if (span.getBoundingClientRect().x - elementStart > gapWidth) {
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (l < 1) {
+                                    l = 1;
+                                }
+                                newSpan.innerHTML = elementText.substring(0, l - 1);
+                                element.children[j].children[k].innerHTML = elementText.substring(l - 1);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if(newSpan.innerHTML.length > 0) {
+                    newLine.appendChild(newSpan);
+                    element.children[i].innerHTML += newLine.innerHTML;
+                    alignSpans(element.children[i]);
+                }
+            }
+            cursor = document.getElementsByClassName("cursor")[0];
+        }
+    }
+
+    function makePages(pageHeight, element) {
+        var pages = 0;
+        var totalHeight = 0;
+        var elements = [];
+        var addElement = false;
+        for (var i = 0; i < targets.length; i++) {
+            for (var j = 0; j < targets[i].children.length; j++) {
+                elements.push(targets[i].children[j]);
+            }
+        }
+        for (var i = 0; i < elements.length; i++) {
+            if (elements[i] == element) {
+                addElement = true;
+            }
+            totalHeight += elements[i].offsetHeight;
+            if (totalHeight > pageHeight * (pages + 1)) {
+                pages++;
+                if (pages + 1 > targets.length) {
+                    var newPage = document.createElement('div');
+                    newPage.classList.add("page");
+                    document.getElementById('output').appendChild(newPage);
+                    targets = document.getElementsByClassName('page');
+                }
+            }
+            if (addElement) {
+                targets[pages].appendChild(elements[i]);
+            }
+        }
+        if (pages + 1 < targets.length) {
+            for (var i = pages + 1; i < targets.length; i++) {
+                targets[i].remove();
+            }
+        }
+        cursor = document.getElementsByClassName("cursor")[0];
+        updateCursorX();
+    }
+
+    // Create an observer instance.
+    function saveChanges(element) {
+        var pageHeight = pixelsPerInch * 9;
+        wrapText(element);
+        makePages(pageHeight, element);
+        var texts = [];
+        for (var i = 0; i < targets.length; i++) {
+            if (cursor.parentNode.parentNode.parentNode.parentNode == targets[i]) {
+                var placeHolder = "";
+                var elements = targets[i].children;
+                for (var j = 0; j < elements.length; j++) {
+                    if (cursor.parentNode.parentNode.parentNode == elements[j]) {
+                        var placeHolderPar = elements[j].cloneNode(false);
+                        var lines = cursor.parentNode.parentNode.parentNode.children;
+                        for (var k = 0; k < lines.length; k++) {
+                            if (cursor.parentNode.parentNode == lines[k]) {
+                                var placeHolderLine = lines[k].cloneNode(false);
+                                var spans = cursor.parentNode.parentNode.children;
+                                for (var l = 0; l < spans.length; l++) {
+                                    if (cursor.parentNode == spans[l]) {
+                                        newSpan = spans[l].cloneNode(true);
+                                        newSpan.innerHTML = newSpan.innerHTML.substring(0, cursorPosition) + newSpan.innerHTML.substring(cursorPosition + cursor.outerHTML.length);
+                                        if (newSpan.innerHTML.length > 0) {
+                                            placeHolderLine.appendChild(newSpan);
+                                        }
+                                    } else {
+                                        placeHolderLine.appendChild(spans[l].cloneNode(true));
+                                    }
+                                }
+                                placeHolderPar.appendChild(placeHolderLine);
+                            } else {
+                                placeHolderPar.appendChild(lines[k].cloneNode(true));
+                            }
+                        }
+                        placeHolder += placeHolderPar.outerHTML;
+                    } else {
+                        placeHolder += elements[j].outerHTML;
+                    }
+                }
+                texts[i] = placeHolder;
+            } else {
+                texts[i] = targets[i].innerHTML;
+            }
+        }
+        for (var i = 0; i < texts.length; i++) {
+            if (document.getElementsByClassName("textInput").length <= i) {
+                var textInput = document.createElement("input");
+                textInput.type = "hidden";
+                textInput.classList.add("textInput");
+                textInput.name = "Text[]";
+                document.getElementById("hasText").appendChild(textInput);
+            }
+            document.getElementsByClassName("textInput")[i].value = texts[i];
+        }
+        if (document.getElementsByClassName("textInput").length > texts.length) {
+            for (var i = texts.length; i < document.getElementsByClassName("textInput").length; i++) {
+                document.getElementsByClassName("textInput")[i].remove();
+            }
+        }
+        document.getElementById("docForm").submit();
+    }
+
+</script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/16.13.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.13.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/remarkable/1.7.1/remarkable.min.js"></script>

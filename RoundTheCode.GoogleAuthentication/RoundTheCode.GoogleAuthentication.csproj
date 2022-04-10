@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <UserSecretsId>a98c84a4-8d67-45cf-a063-081d4cf659f3</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JavaScriptEngineSwitcher.Extensions.MsDependencyInjection" Version="3.3.0" />
+    <PackageReference Include="JavaScriptEngineSwitcher.V8" Version="3.17.1" />
+    <PackageReference Include="JavaScriptEngineSwitcher.V8.Native.win-x64" Version="3.17.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Facebook" Version="5.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="3.1.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Twitter" Version="5.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="2.16.2" />
+    <PackageReference Include="MongoDB.Driver" Version="2.14.1" />
+    <PackageReference Include="NuGet.Configuration" Version="6.0.0" />
+    <PackageReference Include="React.AspNet" Version="5.2.12" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+    <PackageReference Include="System.Web.Helpers.Crypto" Version="3.2.3" />
+  </ItemGroup>
+
+</Project>

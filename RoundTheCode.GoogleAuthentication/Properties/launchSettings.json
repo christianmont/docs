@@ -1,0 +1,20 @@
+{
+  "profiles": {
+    "Run": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:8888"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "launchUrl": "https://localhost:8888",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "https://localhost:8888",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "distributionName": ""
+    }
+  }
+}

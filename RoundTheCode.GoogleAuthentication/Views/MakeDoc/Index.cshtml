@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Make Document";
+}
+<body>
+    List of Docs
+    <form method="post" target="_blank">
+        <button>New Doc</button>
+        <input type="hidden" name="FormType" value="NewDoc" />
+    </form>
+    @foreach (var item in ViewBag.Docs)
+
+    {
+
+        <a href="MakeDoc/@item.Id"> Doc: @item.Title </a>
+
+    }
+</body>
