@@ -1,25 +1,30 @@
 ﻿@using MongoDB.Bson
 @model MongoDBWebAPI.Models.User
 
-<h1 class="bg-info text-white">Login</h1>
-<div asp-validation-summary="All" class="text-danger"></div>
-
-@if (ViewBag.Message != null)
-{
-    <div class="p-1 mb-2 bg-success text-white">@ViewBag.Message</div>
+@{
+    Layout = "~/Views/Shared/_Login.cshtml";
 }
 
 <form method="post">
-    <div class="form-group">
-        <label asp-for="UserName"></label>
-        <input asp-for="UserName" class="form-control" />
+    <a class="form-logo" href="/">DOCS</a>
+        <h2 class="text-center">Sign in</h2>
+        <div class="form-group">
+            <input type="text" class="form-control" asp-for="UserName" placeholder="Username" required="required"/>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" asp-for="Password" placeholder="Password">
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary login-btn btn-block">Sign in</button>
+        </div>
+        <div class="clearfix">
+            <label class="pull-left checkbox-inline"><input type="checkbox"> Remember me</label>
+            <a href="/forgot-password" class="pull-right">Forgot Password?</a>
+        </div>
+        <div class="or-seperator"><i>or</i></div>
+        <p class="text-center">Login with your social media account</p>
+        <a asp-area="" asp-controller="Account" asp-action="google-login" class="btn btn-primary"><i class="fa fa-facebook"></i>&nbsp; Facebook</a>
+        <a asp-area="" asp-controller="Account" asp-action="facebook-login" class="btn btn-info"><i class="fa fa-twitter"></i>&nbsp; Twitter</a>
+        <a asp-area="" asp-controller="Account" asp-action="twitter-login" class="btn btn-danger"><i class="fa fa-google"></i>&nbsp; Google</a>
     </div>
-    <div class="form-group">
-        <label asp-for="Password"></label>
-        <input type="password" asp-for="Password" class="form-control" />
-    </div>
-    <button type="submit" class="btn btn-primary">Create</button>
 </form>
-<a asp-area="" asp-controller="Account" asp-action="google-login">Google</a>
-<a asp-area="" asp-controller="Account" asp-action="facebook-login">Facebook</a>
-<a asp-area="" asp-controller="Account" asp-action="twitter-login">Twitter</a>

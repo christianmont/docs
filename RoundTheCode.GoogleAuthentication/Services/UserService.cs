@@ -55,7 +55,7 @@ namespace MongoDBWebAPI.Services
         public User GetUser(string UserName, string Password)
         {
             User u = _users.Find<User>(user => user.UserName == UserName).FirstOrDefault();
-            if(Crypto.VerifyHashedPassword(u.Password, Password))
+            if(u != null && Crypto.VerifyHashedPassword(u.Password, Password))
             {
                 return u;
             }

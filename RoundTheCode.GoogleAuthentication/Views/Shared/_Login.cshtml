@@ -10,8 +10,13 @@
     <link rel="stylesheet" href="~/css/site.css">
 </head>
 <body>
-    
-    @RenderBody()
+    <div class="center-flex">
+        <div class="login-form-holder">
+            <div class="login-form">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

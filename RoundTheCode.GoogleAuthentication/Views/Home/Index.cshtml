@@ -1,11 +1,19 @@
 ﻿@{ ViewData["Title"] = "Home Page"; }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
-
-@if (@ViewBag.User != null)
-{
-    <div>The user is @ViewBag.User.UserName</div>
-}
+<div class="nav-displacer"></div>
+<nav class="navbar">
+    <div class="nav_section">
+        <a class="logo" href="/">
+            DOCS
+        </a>
+    </div>
+    <div class="nav_section">
+        <a class="nav-login-btn user-btn" asp-controller="Users" asp-action="Login">
+            Login
+        </a>
+        <div class="seperator">|</div>
+        <a class="nav-login-btn user-btn" asp-controller="Users" asp-action="Index">
+            Sign up
+        </a>
+    </div>
+</nav>
